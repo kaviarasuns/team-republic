@@ -40,7 +40,30 @@ Inspired by [pingdotgg/t3code](https://github.com/pingdotgg/t3code). t3code keep
 
 Note: t3code itself uses Effect's SQL client with raw SQL on SQLite, no ORM. We took the pattern, not the library.
 
-**Backend stack (decided 2026-10-21):** Hono (not Fastify, not NestJS) with Drizzle on Postgres (not Prisma).
+**Backend stack (decided 2026-10-21, superseded later that day by the final stack below):** Hono with Drizzle on Postgres.
+
+### Final stack (decided 2026-10-21, re-checked against what t3code ships)
+
+**Foundation:** TypeScript everywhere, in a pnpm + Vite+ monorepo. Vite+ replaces Turborepo and Biome, since it bundles the task runner, Vitest, oxlint and oxfmt.
+
+**Shared packages**
+- `packages/contracts`: Effect Schema types, typed errors and RPC definitions.
+- `packages/client`: Effect RPC client plus `@effect/atom-react` state, shared by web and mobile.
+
+**Backend (`apps/api`)**
+- Runtime: Node in a single Docker image, built on Effect v4 services and Layers.
+- API: Effect RPC for our own apps; Effect HttpApi for public routes and webhooks.
+- Database: Postgres with Drizzle's effect-postgres driver; migrations via drizzle-kit.
+- Jobs: Postgres outbox (SKIP LOCKED) plus an Effect worker fiber.
+- Auth: Better Auth with its Drizzle adapter (tables live in our schema and migrations), plus a CurrentUser RPC middleware.
+- Config and observability: Effect Config and Effect's built-in OTLP exporter (`effect/observability/OtlpTracer`), no separate OpenTelemetry SDK.
+- Tests: `@effect/vitest` with in-memory Layers.
+
+**Web (`apps/web`):** React, Vite, TanStack Router, Tailwind 4.
+
+**Mobile (`apps/mobile`):** Expo with Expo Router, uniwind (Tailwind for React Native, shared styling with web) and Legend List for long lists; expo-notifications for push, sent from the outbox worker; EAS for builds and over-the-air updates.
+
+**Risk note:** Effect v4, Drizzle 1.0 and Vite+ are all new. Pin exact versions and upgrade deliberately. Keep the outbox and event log as plain SQL so they stay portable.
 
 ## Open questions
 1. Who is the primary user?
@@ -61,4 +84,5 @@ Note: t3code itself uses Effect's SQL client with raw SQL on SQLite, no ORM. We 
 - 2026-10-21: MVP scope is Tamil Nadu only for v1: Tamil Nadu Assembly election results first, not Lok Sabha.
 - 2026-10-21: v1 ships both raw TN Assembly results (winner, party, vote share per constituency) AND candidate profiles with affidavit data (assets, liabilities, criminal cases, education) in the same release.
 - 2026-10-21: Kaviarasu shared pingdotgg/t3code during the 7 PM call and chose to explore it as possible inspiration beyond the existing NestJS stack; the live-results design adopts its event-log-plus-subscription pattern.
-- 2026-10-21: Backend locked to Hono (not Fastify or NestJS) and Drizzle on Postgres (not Prisma), decided on the 7 PM call. Kaviarasu was open to going beyond the existing NestJS stack, looked at pingdotgg/t3code for the real-time event-log pattern, and after comparing Hono vs Fastify chose Hono for its edge-readiness and portability.
+- 2026-10-21: Backend locked to Hono (not Fastify or NestJS) and Drizzle on Postgres (not Prisma), decided on the 7 PM call. Kaviarasu was open to going beyond the existing NestJS stack, looked at pingdotgg/t3code for the real-time event-log pattern, and after comparing Hono vs Fastify chose Hono for its edge-readiness and portability. (Superseded 2026-10-21 by the final Effect stack.)
+- 2026-10-21: Final stack locked: Effect v4 backend (Effect RPC + HttpApi) with Drizzle on Postgres, Better Auth, Postgres outbox; React/Vite/TanStack Router web; Expo with uniwind and Legend List mobile; pnpm + Vite+ monorepo. Supersedes the earlier Hono decision. See Tech stack > Final stack.
