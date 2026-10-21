@@ -35,6 +35,9 @@ _TBD._
 ## Tech stack (default assumptions)
 Expo/React Native (mobile first), Next.js web, NestJS or Spring Boot API, PostgreSQL + Prisma.
 
+### Real-time design for live results
+Inspired by [pingdotgg/t3code](https://github.com/pingdotgg/t3code). t3code keeps an event log in a database: commands are recorded first, and a separate worker handles side effects afterward. Clients connect over authenticated RPC on a socket and subscribe per page, so each client only receives updates for what it is viewing. We are adopting this event-log-plus-subscription pattern for live election results.
+
 ## Open questions
 1. Who is the primary user?
 2. What's the one job they hire this app for?
@@ -53,3 +56,4 @@ Expo/React Native (mobile first), Next.js web, NestJS or Spring Boot API, Postgr
 - 2026-10-19: Bilingual Tamil + English from day one; store both name forms for candidates, parties, places.
 - 2026-10-21: MVP scope is Tamil Nadu only for v1: Tamil Nadu Assembly election results first, not Lok Sabha.
 - 2026-10-21: v1 ships both raw TN Assembly results (winner, party, vote share per constituency) AND candidate profiles with affidavit data (assets, liabilities, criminal cases, education) in the same release.
+- 2026-10-21: Kaviarasu shared pingdotgg/t3code during the 7 PM call and chose to explore it as possible inspiration beyond the existing NestJS stack; the live-results design adopts its event-log-plus-subscription pattern.
