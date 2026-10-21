@@ -60,8 +60,8 @@ Free app for voters; paid professional tools (booth-level analysis, exports, API
 ## Neutrality & legal
 _TBD._
 
-## Tech stack (default assumptions)
-Expo/React Native (mobile first), Next.js web, NestJS or Spring Boot API, PostgreSQL + Prisma.
+## Tech stack
+Build the Final stack section below. That decision is from 2026-10-21. Next.js, NestJS, Spring Boot, and Prisma are retired. Mobile stays on Expo, as that section specifies.
 
 ### Real-time design for live results
 Inspired by [pingdotgg/t3code](https://github.com/pingdotgg/t3code). t3code keeps an event log in a database: commands are recorded first, and a separate worker handles side effects afterward. Clients connect over authenticated RPC on a socket and subscribe per page, so each client only receives updates for what it is viewing. We are adopting this event-log-plus-subscription pattern for live election results.
@@ -115,3 +115,4 @@ Note: t3code itself uses Effect's SQL client with raw SQL on SQLite, no ORM. We 
 - 2026-10-21: Backend locked to Hono (not Fastify or NestJS) and Drizzle on Postgres (not Prisma), decided on the 7 PM call. Kaviarasu was open to going beyond the existing NestJS stack, looked at pingdotgg/t3code for the real-time event-log pattern, and after comparing Hono vs Fastify chose Hono for its edge-readiness and portability. (Superseded 2026-10-21 by the final Effect stack.)
 - 2026-10-21: Final stack locked: Effect v4 backend (Effect RPC + HttpApi) with Drizzle on Postgres, Better Auth, Postgres outbox; React/Vite/TanStack Router web; Expo with uniwind and Legend List mobile; pnpm + Vite+ monorepo. Supersedes the earlier Hono decision. See Tech stack > Final stack.
 - 2026-10-21: The MVP section is the v1 feature list. It is the Tamil Nadu Assembly voter loop only. Pro tools, Form 20 booth views, maps, delimitation lineage, and counting-day pages on results.eci.gov.in are outside that list.
+- 2026-10-21: The Tech stack opening assumptions are retired. Next.js, NestJS, Spring Boot, and Prisma are not the build target. Build the Final stack section. Mobile stays on Expo.
