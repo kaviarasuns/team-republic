@@ -52,3 +52,4 @@ Expo/React Native (mobile first), Next.js web, NestJS or Spring Boot API, Postgr
 - 2026-10-19: Launch with full results history (Lok Sabha since 1951, TN assembly since 1967). Needs constituency lineage mapping across delimitations (1976, 2008). Affidavit data only for recent elections.
 - 2026-10-19: Bilingual Tamil + English from day one; store both name forms for candidates, parties, places.
 - 2026-10-21: MVP scope is Tamil Nadu only for v1: Tamil Nadu Assembly election results first, not Lok Sabha.
+- 2026-10-21: v1 ships both raw TN Assembly results (winner, party, vote share per constituency) AND candidate profiles with affidavit data (assets, liabilities, criminal cases, education) in the same release.
