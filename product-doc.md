@@ -38,6 +38,10 @@ Expo/React Native (mobile first), Next.js web, NestJS or Spring Boot API, Postgr
 ### Real-time design for live results
 Inspired by [pingdotgg/t3code](https://github.com/pingdotgg/t3code). t3code keeps an event log in a database: commands are recorded first, and a separate worker handles side effects afterward. Clients connect over authenticated RPC on a socket and subscribe per page, so each client only receives updates for what it is viewing. We are adopting this event-log-plus-subscription pattern for live election results.
 
+Note: t3code itself uses Effect's SQL client with raw SQL on SQLite, no ORM. We took the pattern, not the library.
+
+**Backend stack (decided 2026-10-21):** Hono (not Fastify, not NestJS) with Drizzle on Postgres (not Prisma).
+
 ## Open questions
 1. Who is the primary user?
 2. What's the one job they hire this app for?
@@ -57,3 +61,4 @@ Inspired by [pingdotgg/t3code](https://github.com/pingdotgg/t3code). t3code keep
 - 2026-10-21: MVP scope is Tamil Nadu only for v1: Tamil Nadu Assembly election results first, not Lok Sabha.
 - 2026-10-21: v1 ships both raw TN Assembly results (winner, party, vote share per constituency) AND candidate profiles with affidavit data (assets, liabilities, criminal cases, education) in the same release.
 - 2026-10-21: Kaviarasu shared pingdotgg/t3code during the 7 PM call and chose to explore it as possible inspiration beyond the existing NestJS stack; the live-results design adopts its event-log-plus-subscription pattern.
+- 2026-10-21: Backend locked to Hono (not Fastify or NestJS) and Drizzle on Postgres (not Prisma), decided on the 7 PM call. Kaviarasu was open to going beyond the existing NestJS stack, looked at pingdotgg/t3code for the real-time event-log pattern, and after comparing Hono vs Fastify chose Hono for its edge-readiness and portability.
