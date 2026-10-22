@@ -3,7 +3,7 @@ import { alias } from "drizzle-orm/pg-core";
 import { Effect, Layer } from "effect";
 import { Database } from "../db/database.ts";
 import * as t from "../db/schema.ts";
-import { type CandidacyRow, ElectionRepository } from "./repository.ts";
+import { type CandidacyRow, type ConstituencyRow, ElectionRepository } from "./repository.ts";
 
 const candidacyColumns = {
   candidacyId: t.candidacy.id,
@@ -88,7 +88,37 @@ const constituencyColumns = {
   districtEn: t.constituency.districtEn,
   districtTa: t.constituency.districtTa,
   notaVotes: t.constituency.notaVotes,
+  sourceDocumentId: t.sourceDocument.id,
+  publisher: t.sourceDocument.publisher,
+  title: t.sourceDocument.title,
+  landingUrl: t.sourceDocument.landingUrl,
+  sheet: t.constituency.sourceSheet,
+  row: t.constituency.sourceRow,
 };
+
+type ConstituencySelect = {
+  [K in keyof typeof constituencyColumns]: (typeof constituencyColumns)[K]["_"]["data"] | null;
+};
+
+const toConstituencyRow = (r: ConstituencySelect): ConstituencyRow => ({
+  id: r.id!,
+  electionId: r.electionId!,
+  number: r.number!,
+  nameEn: r.nameEn,
+  nameTa: r.nameTa,
+  reservation: r.reservation,
+  districtEn: r.districtEn,
+  districtTa: r.districtTa,
+  notaVotes: r.notaVotes,
+  source: {
+    sourceDocumentId: r.sourceDocumentId!,
+    publisher: r.publisher!,
+    title: r.title!,
+    landingUrl: r.landingUrl!,
+    sheet: r.sheet,
+    row: r.row,
+  },
+});
 
 const isUuid = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
@@ -107,6 +137,12 @@ export const ElectionRepositoryDrizzle = Layer.effect(
         .innerJoin(t.candidate, eq(t.candidate.id, t.candidacy.candidateId))
         .innerJoin(t.sourceDocument, eq(t.sourceDocument.id, t.candidacy.sourceDocumentId))
         .leftJoin(t.party, eq(t.party.id, t.candidacy.partyId));
+
+    const selectConstituencies = () =>
+      db
+        .select(constituencyColumns)
+        .from(t.constituency)
+        .innerJoin(t.sourceDocument, eq(t.sourceDocument.id, t.constituency.sourceDocumentId));
 
     const affidavitSource = alias(t.sourceDocument, "affidavit_source");
 
@@ -127,18 +163,16 @@ export const ElectionRepositoryDrizzle = Layer.effect(
 
       listConstituencies: (electionId) =>
         run(
-          db
-            .select(constituencyColumns)
-            .from(t.constituency)
+          selectConstituencies()
             .where(eq(t.constituency.electionId, electionId))
             .orderBy(t.constituency.number),
-        ),
+        ).pipe(Effect.map((rows) => rows.map(toConstituencyRow))),
 
       findConstituency: (id) =>
         isUuid(id)
-          ? run(
-              db.select(constituencyColumns).from(t.constituency).where(eq(t.constituency.id, id)),
-            ).pipe(Effect.map((rows) => rows[0] ?? null))
+          ? run(selectConstituencies().where(eq(t.constituency.id, id))).pipe(
+              Effect.map((rows) => (rows[0] === undefined ? null : toConstituencyRow(rows[0]))),
+            )
           : Effect.succeed(null),
 
       listCandidacies: (constituencyId) =>

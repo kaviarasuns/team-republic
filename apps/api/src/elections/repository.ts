@@ -28,6 +28,7 @@ export interface ConstituencyRow {
   readonly districtEn: string | null;
   readonly districtTa: string | null;
   readonly notaVotes: number | null;
+  readonly source: SourceRow;
 }
 
 export interface PartyRow {
@@ -84,9 +85,7 @@ export class ElectionRepository extends Context.Service<
     readonly listCandidacies: (
       constituencyId: string,
     ) => Effect.Effect<ReadonlyArray<CandidacyRow>>;
-    readonly findCandidate: (
-      id: string,
-    ) => Effect.Effect<{
+    readonly findCandidate: (id: string) => Effect.Effect<{
       readonly id: string;
       readonly nameEn: string | null;
       readonly nameTa: string | null;
