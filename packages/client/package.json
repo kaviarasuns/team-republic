@@ -15,13 +15,13 @@
     "@team-republic/contracts": "workspace:*",
     "effect": "4.0.5"
   },
-  "peerDependencies": {
-    "react": "19.3.0"
-  },
   "devDependencies": {
     "@types/react": "19.3.0",
     "react": "19.3.0",
     "typescript": "6.0.3",
     "vite-plus": "1.3.0"
+  },
+  "peerDependencies": {
+    "react": "19.3.0"
   }
 }

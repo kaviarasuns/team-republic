@@ -62,7 +62,8 @@ export const ObjectStorageLive = Layer.effect(
         Effect.catch(() =>
           Effect.tryPromise({
             try: () => client.send(new CreateBucketCommand({ Bucket: bucket })),
-            catch: (cause) => new ObjectStorageError({ operation: "createBucket", key: bucket, cause }),
+            catch: (cause) =>
+              new ObjectStorageError({ operation: "createBucket", key: bucket, cause }),
           }),
         ),
       );

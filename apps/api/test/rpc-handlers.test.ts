@@ -21,7 +21,9 @@ const source = {
   row: 2,
 };
 
-const candidacy = (overrides: Partial<CandidacyRow> & Pick<CandidacyRow, "candidacyId" | "candidateId">) =>
+const candidacy = (
+  overrides: Partial<CandidacyRow> & Pick<CandidacyRow, "candidacyId" | "candidateId">,
+) =>
   ({
     candidateNameEn: "Candidate",
     candidateNameTa: null,
@@ -70,7 +72,13 @@ const fixtures: InMemoryData = {
     },
   ],
   candidacies: [
-    candidacy({ candidacyId: "c-b", candidateId: "cand-b", candidateNameEn: "Candidate B", totalVotes: 300, rank: 2 }),
+    candidacy({
+      candidacyId: "c-b",
+      candidateId: "cand-b",
+      candidateNameEn: "Candidate B",
+      totalVotes: 300,
+      rank: 2,
+    }),
     candidacy({
       candidacyId: "c-a",
       candidateId: "cand-a",
@@ -83,7 +91,9 @@ const fixtures: InMemoryData = {
   ],
 };
 
-const run = <A, E>(f: (client: Effect.Success<ReturnType<typeof makeClient>>) => Effect.Effect<A, E>) =>
+const run = <A, E>(
+  f: (client: Effect.Success<ReturnType<typeof makeClient>>) => Effect.Effect<A, E>,
+) =>
   Effect.gen(function* () {
     const client = yield* makeClient();
     return yield* f(client);
@@ -122,7 +132,11 @@ describe("ElectionRpcs", () => {
       expect(result.margin).toBe(300);
       expect(result.candidates[0]?.party?.abbreviation).toBe("TP");
       expect(result.candidates[1]?.party).toBeNull();
-      expect(result.candidates[0]?.source).toMatchObject({ url: source.landingUrl, sheet: "Sheet1", row: 2 });
+      expect(result.candidates[0]?.source).toMatchObject({
+        url: source.landingUrl,
+        sheet: "Sheet1",
+        row: 2,
+      });
     }),
   );
 

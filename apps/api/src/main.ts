@@ -14,9 +14,11 @@ import { PublicApiLive } from "./http/public-api.ts";
 import { OutboxHandlersLive, OutboxWorkerLive } from "./outbox/outbox.ts";
 import { TelemetryLive } from "./telemetry.ts";
 
-const RpcRoutes = RpcServer.layerHttp({ group: ElectionRpcs, path: RPC_PATH, protocol: "http" }).pipe(
-  Layer.provide([ElectionRpcsLive, RpcSerialization.layerJson]),
-);
+const RpcRoutes = RpcServer.layerHttp({
+  group: ElectionRpcs,
+  path: RPC_PATH,
+  protocol: "http",
+}).pipe(Layer.provide([ElectionRpcsLive, RpcSerialization.layerJson]));
 
 const Routes = Layer.unwrap(
   Effect.gen(function* () {
