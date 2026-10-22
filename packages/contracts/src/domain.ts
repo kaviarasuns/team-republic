@@ -91,6 +91,11 @@ export const ConstituencyResult = Schema.Struct({
   totalVotes: Schema.Number,
   /** Winner's votes minus the runner-up's votes. Null when there is no runner-up. */
   margin: Schema.NullOr(Schema.Number),
+  /**
+   * Where the constituency's own line (NOTA) is printed. Total and margin are
+   * computed from the candidate rows of this same document.
+   */
+  source: SourceRef,
 });
 export type ConstituencyResult = typeof ConstituencyResult.Type;
 

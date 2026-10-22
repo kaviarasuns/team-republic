@@ -139,6 +139,7 @@ export const ElectionRpcsLive = ElectionRpcs.toLayer(
             notaVotes: constituency.notaVotes,
             totalVotes: total,
             margin: margin(rows),
+            source: toSourceRef(constituency.source),
           };
         }),
 

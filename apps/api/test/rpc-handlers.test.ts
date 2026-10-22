@@ -58,6 +58,7 @@ const fixtures: InMemoryData = {
       districtEn: null,
       districtTa: null,
       notaVotes: null,
+      source,
     },
     {
       id: "ac-1",
@@ -69,6 +70,7 @@ const fixtures: InMemoryData = {
       districtEn: "Test District",
       districtTa: null,
       notaVotes: 100,
+      source: { ...source, row: 4 },
     },
   ],
   candidacies: [
@@ -132,6 +134,7 @@ describe("ElectionRpcs", () => {
       expect(result.margin).toBe(300);
       expect(result.candidates[0]?.party?.abbreviation).toBe("TP");
       expect(result.candidates[1]?.party).toBeNull();
+      expect(result.source).toMatchObject({ url: source.landingUrl, row: 4 });
       expect(result.candidates[0]?.source).toMatchObject({
         url: source.landingUrl,
         sheet: "Sheet1",

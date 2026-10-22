@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "Team Republic",
+    "slug": "team-republic",
+    "scheme": "teamrepublic",
+    "userInterfaceStyle": "automatic",
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": ["expo-router", "expo-localization"]
+  }
+}

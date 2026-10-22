@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Noto Sans Tamil", system-ui, sans-serif;
+}
+
+body {
+  @apply bg-neutral-50 text-neutral-900 antialiased;
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  @apply outline-2 outline-offset-2 outline-neutral-800;
+}
