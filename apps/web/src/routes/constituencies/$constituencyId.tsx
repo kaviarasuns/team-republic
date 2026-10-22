@@ -52,7 +52,7 @@ function ConstituencyResultView({
     <>
       <header className="mb-6">
         <p className="text-sm text-neutral-600">
-          {displayName(data.election.name, locale)} ({formatNumber(data.election.year, locale)})
+          {displayName(data.election.name, locale)} ({data.election.year})
         </p>
         <h1 className="mt-1 text-2xl font-semibold text-neutral-900">
           {formatNumber(data.constituency.number, locale)} ·{" "}

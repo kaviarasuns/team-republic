@@ -8,7 +8,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vp test run"
+    "test": "vp test run --passWithNoTests"
   },
   "dependencies": {
     "effect": "4.0.5"

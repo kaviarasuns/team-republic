@@ -38,7 +38,7 @@ function ConstituenciesPage() {
         onSuccess={(data) => (
           <>
             <p className="mb-4 text-sm text-neutral-600">
-              {displayName(data.election.name, locale)} ({formatNumber(data.election.year, locale)})
+              {displayName(data.election.name, locale)} ({data.election.year})
             </p>
             <label className="mb-4 block">
               <span className="sr-only">{L.constituencies}</span>
