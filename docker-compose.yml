@@ -1,0 +1,32 @@
+name: team-republic
+
+services:
+  postgres:
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_USER: team_republic
+      POSTGRES_PASSWORD: team_republic
+      POSTGRES_DB: team_republic
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U team_republic -d team_republic"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # S3-compatible object storage for archived source files. Production uses AWS S3.
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.48
+    command: server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json
+    ports:
+      - "8333:8333"
+    volumes:
+      - seaweedfs-data:/data
+      - ./infra/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+
+volumes:
+  postgres-data:
+  seaweedfs-data:

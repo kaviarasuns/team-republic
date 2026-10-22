@@ -1,0 +1,22 @@
+{
+  "name": "team-republic",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vp run -r build",
+    "check": "vp check",
+    "lint": "vp lint",
+    "fmt": "vp fmt",
+    "test": "vp run -r test",
+    "typecheck": "vp run -r typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typescript": "6.0.3",
+    "vite-plus": "1.3.0"
+  },
+  "engines": {
+    "node": "24.22.1"
+  },
+  "packageManager": "pnpm@10.34.7"
+}
