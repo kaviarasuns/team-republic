@@ -136,16 +136,19 @@ export const ElectionRepositoryDrizzle = Layer.effect(
 
       findConstituency: (id) =>
         isUuid(id)
-          ? run(db.select(constituencyColumns).from(t.constituency).where(eq(t.constituency.id, id))).pipe(
-              Effect.map((rows) => rows[0] ?? null),
-            )
+          ? run(
+              db.select(constituencyColumns).from(t.constituency).where(eq(t.constituency.id, id)),
+            ).pipe(Effect.map((rows) => rows[0] ?? null))
           : Effect.succeed(null),
 
       listCandidacies: (constituencyId) =>
         isUuid(constituencyId)
           ? run(
               selectCandidacies().where(
-                and(eq(t.candidacy.constituencyId, constituencyId), eq(t.candidacy.status, "result")),
+                and(
+                  eq(t.candidacy.constituencyId, constituencyId),
+                  eq(t.candidacy.status, "result"),
+                ),
               ),
             ).pipe(Effect.map((rows) => rows.map(toCandidacyRow)))
           : Effect.succeed([]),
@@ -154,7 +157,11 @@ export const ElectionRepositoryDrizzle = Layer.effect(
         isUuid(id)
           ? run(
               db
-                .select({ id: t.candidate.id, nameEn: t.candidate.nameEn, nameTa: t.candidate.nameTa })
+                .select({
+                  id: t.candidate.id,
+                  nameEn: t.candidate.nameEn,
+                  nameTa: t.candidate.nameTa,
+                })
                 .from(t.candidate)
                 .where(eq(t.candidate.id, id)),
             ).pipe(Effect.map((rows) => rows[0] ?? null))

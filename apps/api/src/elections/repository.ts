@@ -77,13 +77,23 @@ export class ElectionRepository extends Context.Service<
   {
     readonly latestGeneralElection: Effect.Effect<ElectionRow | null>;
     readonly findElection: (id: string) => Effect.Effect<ElectionRow | null>;
-    readonly listConstituencies: (electionId: string) => Effect.Effect<ReadonlyArray<ConstituencyRow>>;
+    readonly listConstituencies: (
+      electionId: string,
+    ) => Effect.Effect<ReadonlyArray<ConstituencyRow>>;
     readonly findConstituency: (id: string) => Effect.Effect<ConstituencyRow | null>;
-    readonly listCandidacies: (constituencyId: string) => Effect.Effect<ReadonlyArray<CandidacyRow>>;
+    readonly listCandidacies: (
+      constituencyId: string,
+    ) => Effect.Effect<ReadonlyArray<CandidacyRow>>;
     readonly findCandidate: (
       id: string,
-    ) => Effect.Effect<{ readonly id: string; readonly nameEn: string | null; readonly nameTa: string | null } | null>;
-    readonly listCandidaciesForCandidate: (candidateId: string) => Effect.Effect<ReadonlyArray<CandidacyRow>>;
+    ) => Effect.Effect<{
+      readonly id: string;
+      readonly nameEn: string | null;
+      readonly nameTa: string | null;
+    } | null>;
+    readonly listCandidaciesForCandidate: (
+      candidateId: string,
+    ) => Effect.Effect<ReadonlyArray<CandidacyRow>>;
     readonly findAffidavit: (candidacyId: string) => Effect.Effect<AffidavitRow | null>;
   }
 >()("ElectionRepository") {}

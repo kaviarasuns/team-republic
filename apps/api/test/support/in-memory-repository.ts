@@ -27,7 +27,8 @@ export const inMemoryRepository = (data: InMemoryData) =>
       findElection: (id) => Effect.sync(() => data.elections.find((e) => e.id === id) ?? null),
       listConstituencies: (electionId) =>
         Effect.sync(() => data.constituencies.filter((c) => c.electionId === electionId)),
-      findConstituency: (id) => Effect.sync(() => data.constituencies.find((c) => c.id === id) ?? null),
+      findConstituency: (id) =>
+        Effect.sync(() => data.constituencies.find((c) => c.id === id) ?? null),
       listCandidacies: (constituencyId) =>
         Effect.sync(() => data.candidacies.filter((c) => c.constituencyId === constituencyId)),
       findCandidate: (id) =>

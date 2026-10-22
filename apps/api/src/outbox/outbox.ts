@@ -11,9 +11,10 @@ export interface OutboxMessage {
 export type OutboxHandler = (message: OutboxMessage) => Effect.Effect<void, unknown>;
 
 /** Topic → handler. Messages with no handler stay pending and are logged. */
-export class OutboxHandlers extends Context.Service<OutboxHandlers, ReadonlyMap<string, OutboxHandler>>()(
-  "OutboxHandlers",
-) {}
+export class OutboxHandlers extends Context.Service<
+  OutboxHandlers,
+  ReadonlyMap<string, OutboxHandler>
+>()("OutboxHandlers") {}
 
 const MAX_ATTEMPTS = 10;
 const BATCH_SIZE = 20;

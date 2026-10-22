@@ -5,10 +5,9 @@ import { DatabaseUrl } from "../config.ts";
 
 const makeDatabase = PgDrizzle.makeWithDefaults();
 
-export class Database extends Context.Service<
-  Database,
-  Effect.Success<typeof makeDatabase>
->()("Database") {}
+export class Database extends Context.Service<Database, Effect.Success<typeof makeDatabase>>()(
+  "Database",
+) {}
 
 export const PgLive = PgClient.layerConfig({ url: DatabaseUrl });
 
