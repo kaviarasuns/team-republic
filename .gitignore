@@ -10,7 +10,6 @@ build/
 *.tsbuildinfo
 .vite/
 coverage/
-apps/web/src/routeTree.gen.ts
 
 # Expo
 .expo/
