@@ -74,8 +74,7 @@ function CandidacyBlock({
         </Link>
       </h2>
       <p className="mt-1 text-sm text-neutral-600">
-        {displayName(candidacy.election.name, locale)} (
-        {formatNumber(candidacy.election.year, locale)}){" · "}
+        {displayName(candidacy.election.name, locale)} ({candidacy.election.year}){" · "}
         {candidacy.party ? (
           <>
             {candidacy.party.abbreviation} · {displayName(candidacy.party.name, locale)}
