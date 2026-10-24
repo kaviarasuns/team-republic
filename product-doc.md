@@ -96,7 +96,7 @@ Note: t3code itself uses Effect's SQL client with raw SQL on SQLite, no ORM. We 
 ## Open questions
 1. Who is the primary user?
 2. What's the one job they hire this app for?
-7. Should Lok Sabha Tamil Nadu results be V2 or later?
+7. Should Lok Sabha Tamil Nadu results be V2 or later? **Resolved: deferred (see 2026-10-24 decision).**
 6. How to show criminal cases (strictly as declared vs plain count on cards)? User is thinking about it.
 3. Free/non-commercial or commercial? Decides whether MyNeta/TCPD data can be used.
 4. Seek written permission from ADR and TCPD? (not contacted yet)
@@ -116,3 +116,4 @@ Note: t3code itself uses Effect's SQL client with raw SQL on SQLite, no ORM. We 
 - 2026-10-21: Final stack locked: Effect v4 backend (Effect RPC + HttpApi) with Drizzle on Postgres, Better Auth, Postgres outbox; React/Vite/TanStack Router web; Expo with uniwind and Legend List mobile; pnpm + Vite+ monorepo. Supersedes the earlier Hono decision. See Tech stack > Final stack.
 - 2026-10-21: The MVP section is the v1 feature list. It is the Tamil Nadu Assembly voter loop only. Pro tools, Form 20 booth views, maps, delimitation lineage, and counting-day pages on results.eci.gov.in are outside that list.
 - 2026-10-21: The Tech stack opening assumptions are retired. Next.js, NestJS, Spring Boot, and Prisma are not the build target. Build the Final stack section. Mobile stays on Expo.
+- 2026-10-24: Lok Sabha timing deferred. V1 and the near-term roadmap stay Tamil Nadu Assembly only (234 constituencies). Lok Sabha comes later, once the TN Assembly experience is stronger. Resolves open question 7.
