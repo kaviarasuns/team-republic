@@ -5,7 +5,9 @@ export const DatabaseUrl = Config.Redacted("DATABASE_URL");
 export const ApiConfig = Config.all({
   port: Config.Port("API_PORT").pipe(Config.withDefault(4000)),
   corsOrigins: Config.String("CORS_ORIGINS").pipe(
-    Config.withDefault("http://localhost:5173,http://localhost:8081"),
+    Config.withDefault(
+      "https://team-republic.localhost,http://localhost:5173,http://localhost:8081",
+    ),
     Config.map((value) => value.split(",").map((origin) => origin.trim())),
   ),
 });

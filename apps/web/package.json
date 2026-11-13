@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vp dev",
+    "dev": "portless team-republic vp dev",
     "build": "vp build",
     "preview": "vp preview",
     "typecheck": "tsc -p tsconfig.json",
