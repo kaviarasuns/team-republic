@@ -2,6 +2,7 @@ import { useAtomValue } from "@effect/atom-react";
 import { constituencyResultAtom, formatNumber, formatPercent, labels } from "@team-republic/client";
 import type { ConstituencyId, ConstituencyResult, ResultRow } from "@team-republic/contracts";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { useMemo } from "react";
 import { AsyncResultView } from "../../lib/async-result-view.tsx";
 import { useLocale } from "../../lib/locale.tsx";
@@ -21,6 +22,8 @@ function ConstituencyResultPage() {
     [constituencyId],
   );
   const result = useAtomValue(resultAtom);
+  // Back to the list for this constituency's election, not the latest one.
+  const backSearch = AsyncResult.isSuccess(result) ? { election: result.value.election.id } : {};
 
   return (
     <div>
@@ -30,7 +33,11 @@ function ConstituencyResultPage() {
         onSuccess={(data) => <ConstituencyResultView data={data} locale={locale} />}
       />
       <p className="mt-6">
-        <Link to="/" className="text-sm text-neutral-600 underline hover:text-neutral-900">
+        <Link
+          to="/"
+          search={backSearch}
+          className="text-sm text-neutral-600 underline hover:text-neutral-900"
+        >
           ← {L.constituencies}
         </Link>
       </p>
