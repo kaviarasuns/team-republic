@@ -1,6 +1,6 @@
 # Team Republic — Product Doc (working name)
 
-_Last updated: 2026-10-21_
+_Last updated: 2026-11-13_
 
 ## Vision
 A politically neutral app for Indian election history and candidate information, starting with Tamil Nadu and India.
@@ -33,6 +33,9 @@ The voter can find a constituency, check the candidates before polling day, and 
 - The app is in Tamil and in English. It stores a Tamil name and an English name for a candidate, a party, and a place when the government file contains that form. If the file has one language, that form is stored and the other name stays empty.
 - When a new official result is stored, an open constituency screen updates from the event log under Tech stack. The number still comes from an ECI statistical report or an ECI bye-election report.
 - Every result figure links to the ECI file it came from. Every affidavit figure links to the affidavit PDF it came from.
+- The web app shows the 234 constituencies on a map, for one election at a time. The voter can colour it by the winning party or by the winning margin, and can pick a seat to see its result. The mobile map comes after the web map.
+- The map covers elections held on the 2008 boundaries, 2011 onward. It draws the DataMeet assembly boundaries (`India_AC`, CC BY 2.5 India, credited on the map) and joins them to results on the AC number. An election on earlier boundaries stays off the map.
+- On the map, the three parties with the most seats across all stored general elections each get a colour from a neutral set, not a party's own colours. Every other party is grey "Other". A legend and the seat panel name the exact party.
 
 v1 does not load MyNeta or TCPD Lok Dhaba. Staff may cross-check a figure against those sites by hand. Written permission is open question 4.
 
@@ -42,7 +45,6 @@ v1 leaves these out.
 
 - Lok Sabha results and MP pages.
 - Booth-level Form 20 views, exports, and an API.
-- A constituency map. DataMeet assembly boundaries remain available for a later map.
 - Counting-day pages from results.eci.gov.in.
 - Candidate comparison, vote-swing maps, alliance history, a manifesto tracker, assembly attendance and questions, alerts, and shareable cards.
 
@@ -117,3 +119,4 @@ Note: t3code itself uses Effect's SQL client with raw SQL on SQLite, no ORM. We 
 - 2026-10-21: The MVP section is the v1 feature list. It is the Tamil Nadu Assembly voter loop only. Pro tools, Form 20 booth views, maps, delimitation lineage, and counting-day pages on results.eci.gov.in are outside that list.
 - 2026-10-21: The Tech stack opening assumptions are retired. Next.js, NestJS, Spring Boot, and Prisma are not the build target. Build the Final stack section. Mobile stays on Expo.
 - 2026-10-24: Lok Sabha timing deferred. V1 and the near-term roadmap stay Tamil Nadu Assembly only (234 constituencies). Lok Sabha comes later, once the TN Assembly experience is stronger. Resolves open question 7.
+- 2026-11-13: A constituency map moves into v1, web first, with Electricity Maps (app.electricitymaps.com) as the layout reference: a full-screen map, a layer choice, a year control, and a side panel. It covers 2011 onward on the DataMeet `India_AC` boundaries (CC BY 2.5 India per that dataset's README, not the repo-wide CC BY 4.0). Parties get a neutral palette, not party colours, to protect neutrality. Supersedes the 2026-10-21 decision that kept maps outside the v1 list.
