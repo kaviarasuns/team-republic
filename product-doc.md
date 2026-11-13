@@ -17,7 +17,7 @@ _TBD._
 
 ## Features
 ### MVP
-v1 is the phone app for an everyday Tamil voter. It covers the Tamil Nadu Assembly only. It does not cover Lok Sabha. Open question 7 still asks whether Tamil Nadu Lok Sabha results are V2 or later.
+v1 is the phone app for an everyday Tamil voter. It covers the Tamil Nadu Assembly only. It does not cover Lok Sabha.
 
 The voter can find a constituency, check the candidates before polling day, and see the sitting MLA for the rest of the year.
 
