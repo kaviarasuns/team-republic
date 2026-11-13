@@ -1,5 +1,6 @@
 import type { Row, Workbook, Worksheet } from "exceljs";
 import { cell, cellText, parseCount } from "./cell-value.ts";
+import { isReservation, type Reservation } from "./constituency-name.ts";
 import { ingestFail } from "./errors.ts";
 
 /**
@@ -8,6 +9,7 @@ import { ingestFail } from "./errors.ts";
  *
  * Row 2 of each sheet is:
  * State/UT | S22-Tamil Nadu | Constituency Name | `<number>-<name>-<GEN|SC|ST>`
+ * From 2026 the reservation is bracketed: `1-GUMMIDIPOONDI-(GEN)`.
  * Names themselves contain hyphens ("Chepauk-Thiruvallikeni"), so the
  * reservation is only the GEN/SC/ST suffix.
  *
@@ -20,7 +22,7 @@ import { ingestFail } from "./errors.ts";
  * is used to cross-check them and to read the reservation.
  */
 
-export type Reservation = "GEN" | "SC" | "ST";
+export type { Reservation };
 
 export interface ParsedConstituencySummary {
   readonly number: number;
@@ -35,7 +37,7 @@ export interface ParsedConstituencySummary {
   readonly headerRow: number;
 }
 
-const NAME_PATTERN = /^(\d+)-(.+)-(GEN|SC|ST)$/;
+const NAME_PATTERN = /^(\d+)-(.+)-(?:(GEN|SC|ST)|\((GEN|SC|ST)\))$/;
 const STATE_LABEL = "S22-Tamil Nadu";
 
 const sheetRows = (sheet: Worksheet): { rowNumber: number; row: Row }[] => {
@@ -45,9 +47,6 @@ const sheetRows = (sheet: Worksheet): { rowNumber: number; row: Row }[] => {
   });
   return rows;
 };
-
-const isReservation = (value: string): value is Reservation =>
-  value === "GEN" || value === "SC" || value === "ST";
 
 const findRows = (
   rows: readonly { rowNumber: number; row: Row }[],
@@ -89,7 +88,7 @@ const parseSheet = (sheet: Worksheet): ParsedConstituencySummary => {
   }
   const number = parseCount(match[1] ?? "", `${where} AC number`);
   const name = match[2] ?? "";
-  const reservationText = match[3] ?? "";
+  const reservationText = match[3] ?? match[4] ?? "";
   if (name === "" || !isReservation(reservationText)) {
     ingestFail(`${where}: could not read name and reservation from ${JSON.stringify(headline)}`);
   }

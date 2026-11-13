@@ -3,19 +3,19 @@ import { Effect } from "effect";
 import { Database } from "../db/database.ts";
 import * as t from "../db/schema.ts";
 import { enqueue } from "../outbox/outbox.ts";
-import type { AssembledTn2021 } from "./assemble-tn2021.ts";
-import { IngestError } from "./errors.ts";
+import type { AssembledElection } from "./assemble.ts";
 import {
-  ELECTION_ID,
-  LANDING_URL,
   LICENCE_NOTE,
   PUBLISHER,
   STATE_CODE,
-  titleFromFileName,
   XLSX_MIME,
-} from "./tn2021-constants.ts";
+  type TnAssemblyElection,
+} from "./elections.ts";
+import { IngestError } from "./errors.ts";
 
 export interface ArchivedSourceFile {
+  /** The report title as ECI lists it. */
+  readonly title: string;
   readonly fileName: string;
   readonly downloadUrl: string;
   readonly sha256: string;
@@ -33,11 +33,12 @@ export interface IngestSummary {
 
 const sourceRow = (
   file: ArchivedSourceFile,
+  landingUrl: string,
   retrievedAt: Date,
 ): typeof t.sourceDocument.$inferInsert => ({
   publisher: PUBLISHER,
-  title: titleFromFileName(file.fileName),
-  landingUrl: LANDING_URL,
+  title: file.title,
+  landingUrl,
   downloadUrl: file.downloadUrl,
   fileName: file.fileName,
   mediaType: XLSX_MIME,
@@ -49,12 +50,19 @@ const sourceRow = (
 });
 
 /**
- * Replaces `tn-ae-2021` in one transaction: delete candidacies, the candidate
- * rows only those candidacies referenced, and constituencies; upsert parties
- * and the election; insert the new rows; enqueue `results.stored`.
- * A failure rolls the transaction back, including the outbox insert.
+ * Replaces one election in one transaction: delete its candidacies, the
+ * candidate rows only those candidacies referenced, and its constituencies;
+ * upsert the election; insert parties not stored yet; insert the new rows;
+ * enqueue `results.stored`. A failure rolls the transaction back, including
+ * the outbox insert.
+ *
+ * Parties are shared across elections and keyed by abbreviation. An existing
+ * party keeps the name and source it was first stored with: the 2026 list
+ * prints names in a different case ("Communist Party Of India (marxist)"), and
+ * overwriting would change how earlier elections show the same party.
  */
-export const storeTn2021 = (
+export const storeElection = (
+  election: TnAssemblyElection,
   files: {
     readonly detailed: ArchivedSourceFile;
     readonly parties: ArchivedSourceFile;
@@ -62,7 +70,7 @@ export const storeTn2021 = (
     readonly summary: ArchivedSourceFile;
   },
   electionName: string,
-  assembled: AssembledTn2021,
+  assembled: AssembledElection,
 ) =>
   Effect.gen(function* () {
     const db = yield* Database;
@@ -73,13 +81,13 @@ export const storeTn2021 = (
         for (const file of [files.detailed, files.parties, files.winners, files.summary]) {
           const [row] = yield* tx
             .insert(t.sourceDocument)
-            .values(sourceRow(file, retrievedAt))
+            .values(sourceRow(file, election.landingUrl, retrievedAt))
             .onConflictDoUpdate({
               target: t.sourceDocument.sha256,
               set: {
                 publisher: PUBLISHER,
-                title: titleFromFileName(file.fileName),
-                landingUrl: LANDING_URL,
+                title: file.title,
+                landingUrl: election.landingUrl,
                 downloadUrl: file.downloadUrl,
                 fileName: file.fileName,
                 mediaType: XLSX_MIME,
@@ -110,10 +118,10 @@ export const storeTn2021 = (
         const previous = yield* tx
           .select({ candidateId: t.candidacy.candidateId })
           .from(t.candidacy)
-          .where(eq(t.candidacy.electionId, ELECTION_ID));
+          .where(eq(t.candidacy.electionId, election.id));
         const previousCandidateIds = [...new Set(previous.map((row) => row.candidateId))];
 
-        yield* tx.delete(t.candidacy).where(eq(t.candidacy.electionId, ELECTION_ID));
+        yield* tx.delete(t.candidacy).where(eq(t.candidacy.electionId, election.id));
         if (previousCandidateIds.length > 0) {
           const stillUsed = yield* tx
             .select({ candidateId: t.candidacy.candidateId })
@@ -125,15 +133,15 @@ export const storeTn2021 = (
             yield* tx.delete(t.candidate).where(inArray(t.candidate.id, orphanIds));
           }
         }
-        yield* tx.delete(t.constituency).where(eq(t.constituency.electionId, ELECTION_ID));
+        yield* tx.delete(t.constituency).where(eq(t.constituency.electionId, election.id));
 
         yield* tx
           .insert(t.election)
           .values({
-            id: ELECTION_ID,
+            id: election.id,
             kind: "general",
             stateCode: STATE_CODE,
-            year: 2021,
+            year: election.year,
             nameEn: electionName,
             nameTa: null,
             sourceDocumentId: detailedId,
@@ -143,7 +151,7 @@ export const storeTn2021 = (
             set: {
               kind: "general",
               stateCode: STATE_CODE,
-              year: 2021,
+              year: election.year,
               nameEn: electionName,
               nameTa: null,
               sourceDocumentId: detailedId,
@@ -164,12 +172,8 @@ export const storeTn2021 = (
             })
             .onConflictDoUpdate({
               target: t.party.abbreviation,
-              set: {
-                nameEn: party.nameEn,
-                sourceDocumentId: partiesId,
-                sourceSheet: party.sourceSheet,
-                sourceRow: party.sourceRow,
-              },
+              // Keep the stored row; the no-op update makes RETURNING give its id.
+              set: { abbreviation: party.abbreviation },
             })
             .returning({ id: t.party.id, abbreviation: t.party.abbreviation });
           if (row === undefined) {
@@ -184,7 +188,7 @@ export const storeTn2021 = (
           .insert(t.constituency)
           .values(
             assembled.constituencies.map((constituency) => ({
-              electionId: ELECTION_ID,
+              electionId: election.id,
               number: constituency.number,
               nameEn: constituency.nameEn,
               nameTa: null,
@@ -245,7 +249,7 @@ export const storeTn2021 = (
               partyId = found;
             }
             candidacyRows.push({
-              electionId: ELECTION_ID,
+              electionId: election.id,
               constituencyId,
               candidateId: person.id,
               partyId,
@@ -267,10 +271,10 @@ export const storeTn2021 = (
           candidates += candidacyRows.length;
         }
 
-        yield* enqueue("results.stored", { electionId: ELECTION_ID });
+        yield* enqueue("results.stored", { electionId: election.id });
 
         const summary: IngestSummary = {
-          electionId: ELECTION_ID,
+          electionId: election.id,
           constituencies: assembled.constituencies.length,
           candidates,
           parties: assembled.parties.length,

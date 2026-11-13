@@ -65,4 +65,22 @@ describe("parseConstituencySummaries", () => {
     sheet.getRow(2).getCell(4).value = "1-Test AC-GEN";
     expect(() => parseConstituencySummaries(workbook)).toThrow(/4\. Total/);
   });
+
+  it("reads the bracketed 2026 reservation suffix", () => {
+    const workbook = newWorkbook();
+    fillSummary(workbook.addWorksheet("S22-2-TEST AC"), "2-TEST AC-(SC)", 20, 1);
+    fillSummary(workbook.addWorksheet("S22-3-OTHER AC"), "3-OTHER AC-(GEN)", 30, 2);
+    expect(
+      parseConstituencySummaries(workbook).map((summary) => [summary.name, summary.reservation]),
+    ).toEqual([
+      ["TEST AC", "SC"],
+      ["OTHER AC", "GEN"],
+    ]);
+  });
+
+  it("rejects an unbalanced bracket around the reservation", () => {
+    const workbook = newWorkbook();
+    fillSummary(workbook.addWorksheet("S22-2-TEST AC"), "2-TEST AC-(SC", 20, 1);
+    expect(() => parseConstituencySummaries(workbook)).toThrow(/is not "<number>-<name>/);
+  });
 });

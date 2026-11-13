@@ -4,6 +4,28 @@ import { parseParties } from "../../src/ingest/parse-parties.ts";
 
 // Synthetic fixture. These names and numbers are not election results.
 
+const addParties2026 = (allPartiesCount: number) => {
+  const workbook = newWorkbook();
+  const sheet = workbook.addWorksheet("Worksheet");
+  sheet.addRow(["PARTY TYPE", "ABBREVIATION", "PARTY"]);
+  sheet.addRow(["NATIONAL PARTIES"]);
+  sheet.addRow([1, "TPA", "Test Party A"]);
+  sheet.addRow(["STATE PARTIES"]);
+  sheet.addRow([2, "TPB", "Test Party B"]);
+  sheet.addRow([null, null, null]);
+  sheet.addRow(["Summary Table", "Summary Table", "Summary Table"]);
+  sheet.addRow(["Party Type", "Party Type", "No. of Parties Participated"]);
+  sheet.addRow(["NATIONAL PARTIES", "NATIONAL PARTIES", 1]);
+  sheet.addRow(["STATE PARTIES", "STATE PARTIES", 1]);
+  sheet.addRow([
+    "All Parties (Excluding NOTA and Independents)",
+    "All Parties (Excluding NOTA and Independents)",
+    allPartiesCount,
+  ]);
+  sheet.addRow(["Disclaimer"]);
+  return workbook;
+};
+
 describe("parseParties", () => {
   it("skips section labels and keeps the serial row as the source row", () => {
     const workbook = newWorkbook();
@@ -43,5 +65,18 @@ describe("parseParties", () => {
     sheet.addRow(["PARTY TYPE", "ABBREVIATION", "PARTY"]);
     sheet.addRow(["mystery", "TPA", "Test Party A"]);
     expect(() => parseParties(workbook)).toThrow(/unrecognised row/);
+  });
+
+  it("reads the 2026 list, which has no IND or NOTA row and ends in a summary table", () => {
+    expect(parseParties(addParties2026(2)).map((party) => party.abbreviation)).toEqual([
+      "TPA",
+      "TPB",
+    ]);
+  });
+
+  it("rejects a summary table whose party count differs from the list", () => {
+    expect(() => parseParties(addParties2026(3))).toThrow(
+      /summary table counts 3 parties, the list has 2/,
+    );
   });
 });
