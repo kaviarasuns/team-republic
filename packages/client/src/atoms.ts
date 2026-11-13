@@ -7,6 +7,10 @@ export const electionsAtom = ElectionClient.query("ListElections", {});
 export const constituenciesAtom = (electionId?: ElectionId) =>
   ElectionClient.query("ListConstituencies", electionId === undefined ? {} : { electionId });
 
+/** Every constituency's winner and margin in one election; omit the id for the latest. */
+export const electionMapAtom = (electionId?: ElectionId) =>
+  ElectionClient.query("GetElectionMap", electionId === undefined ? {} : { electionId });
+
 export const constituencyResultAtom = (constituencyId: ConstituencyId) =>
   ElectionClient.query("GetConstituencyResult", { constituencyId });
 

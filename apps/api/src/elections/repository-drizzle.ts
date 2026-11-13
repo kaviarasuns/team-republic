@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { Effect, Layer } from "effect";
 import { Database } from "../db/database.ts";
@@ -178,6 +178,37 @@ export const ElectionRepositoryDrizzle = Layer.effect(
               Effect.map((rows) => (rows[0] === undefined ? null : toConstituencyRow(rows[0]))),
             )
           : Effect.succeed(null),
+
+      listElectionCandidacies: (electionId) =>
+        run(
+          selectCandidacies().where(
+            and(eq(t.candidacy.electionId, electionId), eq(t.candidacy.status, "result")),
+          ),
+        ).pipe(Effect.map((rows) => rows.map(toCandidacyRow))),
+
+      partySeatTotals: run(
+        db
+          .select({
+            id: t.party.id,
+            abbreviation: t.party.abbreviation,
+            nameEn: t.party.nameEn,
+            nameTa: t.party.nameTa,
+            seats: count(),
+          })
+          .from(t.candidacy)
+          .innerJoin(t.party, eq(t.party.id, t.candidacy.partyId))
+          .innerJoin(t.election, eq(t.election.id, t.candidacy.electionId))
+          .where(
+            and(
+              eq(t.candidacy.isWinner, true),
+              eq(t.candidacy.status, "result"),
+              eq(t.election.kind, "general"),
+            ),
+          )
+          .groupBy(t.party.id),
+      ).pipe(
+        Effect.map((rows) => rows.map(({ seats, ...party }) => ({ party, seats: Number(seats) }))),
+      ),
 
       listCandidacies: (constituencyId) =>
         isUuid(constituencyId)

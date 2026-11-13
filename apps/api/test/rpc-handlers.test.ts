@@ -139,6 +139,79 @@ describe("ElectionRpcs", () => {
     }),
   );
 
+  it.effect("maps every constituency of the latest election with its winner and margin", () =>
+    Effect.gen(function* () {
+      const map = yield* run((client) => client.GetElectionMap({}));
+      expect(map.election.id).toBe("test-2001");
+      expect(map.constituencies.map((c) => c.constituency.number)).toEqual([1, 2]);
+      const first = map.constituencies[0]!;
+      expect(first.winner?.name.en).toBe("Candidate A");
+      expect(first.winner?.party?.abbreviation).toBe("TP");
+      expect(first.winner?.voteShare).toBe(60);
+      expect(first.totalVotes).toBe(1000);
+      expect(first.margin).toBe(300);
+      expect(first.marginShare).toBe(30);
+      const second = map.constituencies[1]!;
+      expect(second.winner).toBeNull();
+      expect(second.margin).toBeNull();
+      expect(second.marginShare).toBeNull();
+      expect(map.partySeatTotals).toEqual([
+        {
+          party: { id: "p-1", abbreviation: "TP", name: { en: "Test Party", ta: null } },
+          seats: 1,
+        },
+      ]);
+    }),
+  );
+
+  it.effect("totals seats across general elections only, leaving out independents", () => {
+    const partyA = { id: "p-a", abbreviation: "PA", nameEn: "Party A", nameTa: null };
+    const partyB = { id: "p-b", abbreviation: "PB", nameEn: "Party B", nameTa: null };
+    const win = (id: string, electionId: string, party: CandidacyRow["party"]) =>
+      candidacy({
+        candidacyId: id,
+        candidateId: `cand-${id}`,
+        electionId,
+        constituencyId: `ac-${id}`,
+        party,
+        isWinner: true,
+      });
+    const data: InMemoryData = {
+      elections: [
+        { id: "g-1", kind: "general", year: 2001, nameEn: null, nameTa: null },
+        { id: "g-2", kind: "general", year: 2006, nameEn: null, nameTa: null },
+        { id: "b-1", kind: "bye", year: 2007, nameEn: null, nameTa: null },
+      ],
+      constituencies: [],
+      candidacies: [
+        win("1", "g-1", partyB),
+        win("2", "g-2", partyB),
+        win("3", "g-2", partyA),
+        win("4", "g-1", partyA),
+        win("5", "b-1", partyA),
+        win("6", "g-2", null),
+      ],
+    };
+    return Effect.gen(function* () {
+      const client = yield* makeClient();
+      const map = yield* client.GetElectionMap({ electionId: "g-1" as ElectionId });
+      expect(map.constituencies).toEqual([]);
+      expect(map.partySeatTotals.map((entry) => [entry.party.abbreviation, entry.seats])).toEqual([
+        ["PA", 2],
+        ["PB", 2],
+      ]);
+    }).pipe(Effect.provide(ElectionRpcsLive.pipe(Layer.provide(inMemoryRepository(data)))));
+  });
+
+  it.effect("fails GetElectionMap with ElectionNotFound for an unknown election", () =>
+    Effect.gen(function* () {
+      const error = yield* run((client) =>
+        client.GetElectionMap({ electionId: "nope" as ElectionId }),
+      ).pipe(Effect.flip);
+      expect(error._tag).toBe("ElectionNotFound");
+    }),
+  );
+
   it.effect("fails with ElectionNotFound for an unknown election", () =>
     Effect.gen(function* () {
       const error = yield* run((client) =>

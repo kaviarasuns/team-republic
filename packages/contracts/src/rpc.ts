@@ -8,6 +8,7 @@ import {
   ConstituencyResult,
   ElectionId,
   ElectionList,
+  ElectionMap,
 } from "./domain.ts";
 import {
   CandidateNotFound,
@@ -26,6 +27,13 @@ export class ElectionRpcs extends RpcGroup.make(
     /** Omit electionId to use the latest general election. */
     payload: { electionId: Schema.optional(ElectionId) },
     success: ConstituencyList,
+    error: Schema.Union([ElectionNotFound, DataUnavailable]),
+  }),
+  /** Every constituency's winner and margin in one election, for the map. */
+  Rpc.make("GetElectionMap", {
+    /** Omit electionId to use the latest general election. */
+    payload: { electionId: Schema.optional(ElectionId) },
+    success: ElectionMap,
     error: Schema.Union([ElectionNotFound, DataUnavailable]),
   }),
   Rpc.make("GetConstituencyResult", {
