@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MapRouteImport } from './routes/map'
 import { Route as CandidatesCandidateIdRouteImport } from './routes/candidates/$candidateId'
 import { Route as ConstituenciesConstituencyIdRouteImport } from './routes/constituencies/$constituencyId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MapRoute = MapRouteImport.update({
+  id: '/map',
+  path: '/map',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CandidatesCandidateIdRoute = CandidatesCandidateIdRouteImport.update({
@@ -32,35 +38,47 @@ const ConstituenciesConstituencyIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/map': typeof MapRoute
   '/candidates/$candidateId': typeof CandidatesCandidateIdRoute
   '/constituencies/$constituencyId': typeof ConstituenciesConstituencyIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/map': typeof MapRoute
   '/candidates/$candidateId': typeof CandidatesCandidateIdRoute
   '/constituencies/$constituencyId': typeof ConstituenciesConstituencyIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/map': typeof MapRoute
   '/candidates/$candidateId': typeof CandidatesCandidateIdRoute
   '/constituencies/$constituencyId': typeof ConstituenciesConstituencyIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/candidates/$candidateId' | '/constituencies/$constituencyId'
+    | '/'
+    | '/map'
+    | '/candidates/$candidateId'
+    | '/constituencies/$constituencyId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/candidates/$candidateId' | '/constituencies/$constituencyId'
+  to:
+    | '/'
+    | '/map'
+    | '/candidates/$candidateId'
+    | '/constituencies/$constituencyId'
   id:
     | '__root__'
     | '/'
+    | '/map'
     | '/candidates/$candidateId'
     | '/constituencies/$constituencyId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  MapRoute: typeof MapRoute
   CandidatesCandidateIdRoute: typeof CandidatesCandidateIdRoute
   ConstituenciesConstituencyIdRoute: typeof ConstituenciesConstituencyIdRoute
 }
@@ -72,6 +90,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/map': {
+      id: '/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof MapRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/candidates/$candidateId': {
@@ -93,6 +118,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  MapRoute: MapRoute,
   CandidatesCandidateIdRoute: CandidatesCandidateIdRoute,
   ConstituenciesConstituencyIdRoute: ConstituenciesConstituencyIdRoute,
 }

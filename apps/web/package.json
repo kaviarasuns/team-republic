@@ -16,6 +16,7 @@
     "@team-republic/client": "workspace:*",
     "@team-republic/contracts": "workspace:*",
     "effect": "4.0.5",
+    "maplibre-gl": "6.16.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },

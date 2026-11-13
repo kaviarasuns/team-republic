@@ -15,6 +15,7 @@ export default defineConfig({
       "**/dist/**",
       "apps/api/drizzle/**",
       "apps/web/src/routeTree.gen.ts",
+      "apps/web/public/maps/**",
       "pnpm-lock.yaml",
       "*.md",
     ],
