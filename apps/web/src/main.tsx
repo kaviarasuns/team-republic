@@ -8,7 +8,7 @@ import { RuntimeMount } from "./lib/runtime-mount.tsx";
 import { routeTree } from "./routeTree.gen";
 import "./styles.css";
 
-configureApiBaseUrl(import.meta.env.VITE_API_URL ?? "http://localhost:4000");
+configureApiBaseUrl(import.meta.env.VITE_API_URL ?? window.location.origin);
 
 const router = createRouter({ routeTree });
 
