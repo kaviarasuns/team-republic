@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --env-file-if-exists=../../.env --watch src/main.ts",
+    "dev": "portless api.team-republic --app-port 4000 node --env-file-if-exists=../../.env --watch src/main.ts",
     "start": "node src/main.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vp test run",
