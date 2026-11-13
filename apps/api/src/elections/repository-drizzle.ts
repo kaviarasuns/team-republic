@@ -147,6 +147,10 @@ export const ElectionRepositoryDrizzle = Layer.effect(
     const affidavitSource = alias(t.sourceDocument, "affidavit_source");
 
     return ElectionRepository.of({
+      listElections: run(
+        db.select(electionColumns).from(t.election).orderBy(desc(t.election.year), t.election.id),
+      ),
+
       latestGeneralElection: run(
         db
           .select(electionColumns)

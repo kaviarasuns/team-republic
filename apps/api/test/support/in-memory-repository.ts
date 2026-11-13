@@ -18,6 +18,7 @@ export const inMemoryRepository = (data: InMemoryData) =>
   Layer.succeed(
     ElectionRepository,
     ElectionRepository.of({
+      listElections: Effect.sync(() => [...data.elections].sort((a, b) => b.year - a.year)),
       latestGeneralElection: Effect.sync(
         () =>
           [...data.elections]
