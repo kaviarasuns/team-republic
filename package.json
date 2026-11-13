@@ -3,6 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "docker compose up -d --wait && pnpm db:migrate && vp run --parallel -F @team-republic/api -F @team-republic/web dev",
+    "dev:mobile": "vp run -F @team-republic/mobile dev",
+    "db:migrate": "pnpm --filter @team-republic/api db:migrate",
+    "db:seed": "pnpm --filter @team-republic/api ingest:tn2021",
+    "db:reset": "docker compose down -v && docker compose up -d --wait && pnpm db:migrate && pnpm db:seed",
     "build": "vp run -r build",
     "check": "vp check",
     "lint": "vp lint",
