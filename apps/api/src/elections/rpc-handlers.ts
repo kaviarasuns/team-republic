@@ -4,6 +4,7 @@ import {
   CandidateNotFound,
   type ConstituencyId,
   ConstituencyNotFound,
+  type ConstituencyOutcome,
   type ConstituencySummary,
   DataUnavailable,
   type Election,
@@ -88,9 +89,49 @@ const toAffidavit = (row: AffidavitRow | null): Affidavit => {
 
 const byRank = (a: CandidacyRow, b: CandidacyRow) => a.rank - b.rank;
 
+const toOutcome = (
+  constituency: ConstituencyRow,
+  rows: ReadonlyArray<CandidacyRow>,
+): ConstituencyOutcome => {
+  const total = constituencyTotal(rows, constituency.notaVotes);
+  const gap = margin(rows);
+  const winner = rows.find((row) => row.isWinner) ?? null;
+  return {
+    constituency: toConstituency(constituency),
+    winner:
+      winner === null
+        ? null
+        : {
+            candidateId: winner.candidateId as CandidateId,
+            name: { en: winner.candidateNameEn, ta: winner.candidateNameTa },
+            party: toParty(winner.party),
+            totalVotes: winner.totalVotes,
+            voteShare: voteShare(winner.totalVotes, total),
+          },
+    totalVotes: total,
+    margin: gap,
+    marginShare: gap === null ? null : voteShare(gap, total),
+  };
+};
+
 export const ElectionRpcsLive = ElectionRpcs.toLayer(
   Effect.gen(function* () {
     const repo = yield* ElectionRepository;
+
+    /** The named election, or the latest general election when no id is given. */
+    const resolveElection = (electionId: ElectionId | undefined) =>
+      Effect.gen(function* () {
+        const election =
+          electionId === undefined
+            ? yield* repo.latestGeneralElection
+            : yield* repo.findElection(electionId);
+        if (election === null) {
+          return yield* electionId === undefined
+            ? new DataUnavailable({ message: "No election has been ingested yet." })
+            : new ElectionNotFound({ electionId });
+        }
+        return election;
+      });
 
     return {
       ListElections: () =>
@@ -104,21 +145,46 @@ export const ElectionRpcsLive = ElectionRpcs.toLayer(
 
       ListConstituencies: ({ electionId }) =>
         Effect.gen(function* () {
-          const election =
-            electionId === undefined
-              ? yield* repo.latestGeneralElection
-              : yield* repo.findElection(electionId);
-          if (election === null) {
-            return yield* electionId === undefined
-              ? new DataUnavailable({ message: "No election has been ingested yet." })
-              : new ElectionNotFound({ electionId });
-          }
+          const election = yield* resolveElection(electionId);
           const constituencies = yield* repo.listConstituencies(election.id);
           return {
             election: toElection(election),
             constituencies: [...constituencies]
               .sort((a, b) => a.number - b.number)
               .map(toConstituency),
+          };
+        }),
+
+      GetElectionMap: ({ electionId }) =>
+        Effect.gen(function* () {
+          const election = yield* resolveElection(electionId);
+          const [constituencies, candidacies, seatTotals] = yield* Effect.all([
+            repo.listConstituencies(election.id),
+            repo.listElectionCandidacies(election.id),
+            repo.partySeatTotals,
+          ]);
+          const byConstituency = new Map<string, CandidacyRow[]>();
+          for (const row of candidacies) {
+            const rows = byConstituency.get(row.constituencyId) ?? [];
+            rows.push(row);
+            byConstituency.set(row.constituencyId, rows);
+          }
+          return {
+            election: toElection(election),
+            constituencies: [...constituencies]
+              .sort((a, b) => a.number - b.number)
+              .map((constituency) =>
+                toOutcome(constituency, byConstituency.get(constituency.id) ?? []),
+              ),
+            partySeatTotals: [...seatTotals]
+              .sort(
+                (a, b) =>
+                  b.seats - a.seats || a.party.abbreviation.localeCompare(b.party.abbreviation),
+              )
+              .flatMap(({ party, seats }) => {
+                const mapped = toParty(party);
+                return mapped === null ? [] : [{ party: mapped, seats }];
+              }),
           };
         }),
 

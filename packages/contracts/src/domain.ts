@@ -111,6 +111,49 @@ export const ConstituencyList = Schema.Struct({
 });
 export type ConstituencyList = typeof ConstituencyList.Type;
 
+/** One constituency on the election map: who won and by how much. */
+export const ConstituencyOutcome = Schema.Struct({
+  constituency: ConstituencySummary,
+  /** Null when the file records no winner for the constituency. */
+  winner: Schema.NullOr(
+    Schema.Struct({
+      candidateId: CandidateId,
+      name: LocalizedName,
+      /** Null for an independent candidate. */
+      party: Schema.NullOr(Party),
+      totalVotes: Schema.Number,
+      /** Percent of all votes recorded for the constituency, NOTA included. */
+      voteShare: Schema.Number,
+    }),
+  ),
+  /** Every vote line in the file for the constituency, NOTA included. */
+  totalVotes: Schema.Number,
+  /** Winner's votes minus the runner-up's votes. Null when there is no runner-up. */
+  margin: Schema.NullOr(Schema.Number),
+  /** The margin as a percent of totalVotes. Null when margin is null. */
+  marginShare: Schema.NullOr(Schema.Number),
+});
+export type ConstituencyOutcome = typeof ConstituencyOutcome.Type;
+
+export const PartySeats = Schema.Struct({
+  party: Party,
+  seats: Schema.Number,
+});
+export type PartySeats = typeof PartySeats.Type;
+
+export const ElectionMap = Schema.Struct({
+  election: Election,
+  /** In constituency-number order. */
+  constituencies: Schema.Array(ConstituencyOutcome),
+  /**
+   * Seats each party won across every stored general election, most first.
+   * It does not change with the election shown, so a client can give a party
+   * the same map colour in every year.
+   */
+  partySeatTotals: Schema.Array(PartySeats),
+});
+export type ElectionMap = typeof ElectionMap.Type;
+
 export const Money = Schema.Struct({
   /** Whole rupees as declared in the affidavit. */
   rupees: Schema.Number,
