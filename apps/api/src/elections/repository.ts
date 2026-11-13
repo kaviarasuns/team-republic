@@ -76,6 +76,8 @@ export interface AffidavitRow {
 export class ElectionRepository extends Context.Service<
   ElectionRepository,
   {
+    /** All stored elections, newest year first. */
+    readonly listElections: Effect.Effect<ReadonlyArray<ElectionRow>>;
     readonly latestGeneralElection: Effect.Effect<ElectionRow | null>;
     readonly findElection: (id: string) => Effect.Effect<ElectionRow | null>;
     readonly listConstituencies: (

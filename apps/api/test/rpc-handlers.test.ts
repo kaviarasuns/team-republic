@@ -104,6 +104,31 @@ const run = <A, E>(
 const makeClient = () => RpcTest.makeClient(ElectionRpcs);
 
 describe("ElectionRpcs", () => {
+  it.effect("lists every stored election, newest year first", () =>
+    Effect.gen(function* () {
+      const list = yield* run((client) => client.ListElections({}));
+      expect(list.elections.map((election) => [election.id, election.year])).toEqual([
+        ["test-2001", 2001],
+        ["test-1996", 1996],
+      ]);
+      expect(list.elections[0]?.name).toEqual({ en: "Test election", ta: null });
+    }),
+  );
+
+  it.effect("lists no elections before anything is ingested", () =>
+    Effect.gen(function* () {
+      const client = yield* makeClient();
+      const list = yield* client.ListElections({});
+      expect(list.elections).toEqual([]);
+    }).pipe(
+      Effect.provide(
+        ElectionRpcsLive.pipe(
+          Layer.provide(inMemoryRepository({ elections: [], constituencies: [], candidacies: [] })),
+        ),
+      ),
+    ),
+  );
+
   it.effect("lists constituencies of the latest general election in number order", () =>
     Effect.gen(function* () {
       const list = yield* run((client) => client.ListConstituencies({}));

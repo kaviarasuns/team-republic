@@ -99,6 +99,12 @@ export const ConstituencyResult = Schema.Struct({
 });
 export type ConstituencyResult = typeof ConstituencyResult.Type;
 
+/** Every stored election, newest year first. */
+export const ElectionList = Schema.Struct({
+  elections: Schema.Array(Election),
+});
+export type ElectionList = typeof ElectionList.Type;
+
 export const ConstituencyList = Schema.Struct({
   election: Election,
   constituencies: Schema.Array(ConstituencySummary),

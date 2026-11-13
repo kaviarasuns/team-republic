@@ -93,6 +93,15 @@ export const ElectionRpcsLive = ElectionRpcs.toLayer(
     const repo = yield* ElectionRepository;
 
     return {
+      ListElections: () =>
+        repo.listElections.pipe(
+          Effect.map((rows) => ({
+            elections: [...rows]
+              .sort((a, b) => b.year - a.year || a.id.localeCompare(b.id))
+              .map(toElection),
+          })),
+        ),
+
       ListConstituencies: ({ electionId }) =>
         Effect.gen(function* () {
           const election =

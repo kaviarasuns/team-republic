@@ -1,6 +1,9 @@
 import type { CandidateId, ConstituencyId, ElectionId } from "@team-republic/contracts";
 import { ElectionClient } from "./rpc-client.ts";
 
+/** Every stored election, newest year first. */
+export const electionsAtom = ElectionClient.query("ListElections", {});
+
 export const constituenciesAtom = (electionId?: ElectionId) =>
   ElectionClient.query("ListConstituencies", electionId === undefined ? {} : { electionId });
 
