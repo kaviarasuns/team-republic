@@ -7,6 +7,7 @@ import {
   ConstituencyList,
   ConstituencyResult,
   ElectionId,
+  ElectionList,
 } from "./domain.ts";
 import {
   CandidateNotFound,
@@ -16,6 +17,11 @@ import {
 } from "./errors.ts";
 
 export class ElectionRpcs extends RpcGroup.make(
+  /** Elections with stored results, newest year first; empty before any ingest. */
+  Rpc.make("ListElections", {
+    payload: {},
+    success: ElectionList,
+  }),
   Rpc.make("ListConstituencies", {
     /** Omit electionId to use the latest general election. */
     payload: { electionId: Schema.optional(ElectionId) },
