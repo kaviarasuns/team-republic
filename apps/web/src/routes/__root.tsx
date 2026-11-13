@@ -1,4 +1,4 @@
-import { createRootRoute, Outlet } from "@tanstack/react-router";
+import { createRootRoute, Outlet, useRouterState } from "@tanstack/react-router";
 import { AppShell } from "../components/app-shell.tsx";
 
 export const Route = createRootRoute({
@@ -6,8 +6,9 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   return (
-    <AppShell>
+    <AppShell fullWidth={pathname === "/map"}>
       <Outlet />
     </AppShell>
   );
