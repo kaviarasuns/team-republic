@@ -1,13 +1,24 @@
 import { useAtomValue } from "@effect/atom-react";
 import { constituenciesAtom, formatNumber, labels, localizedName } from "@team-republic/client";
-import type { ConstituencySummary } from "@team-republic/contracts";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import type { ConstituencySummary, ElectionId } from "@team-republic/contracts";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { useMemo, useState } from "react";
+import { YearPicker } from "../components/year-picker.tsx";
 import { AsyncResultView } from "../lib/async-result-view.tsx";
 import { useLocale } from "../lib/locale.tsx";
 import { displayName } from "../lib/names.ts";
 
+/** `?election=<id>` picks a stored election; without it the page shows the latest one. */
+export interface ConstituenciesSearch {
+  readonly election?: ElectionId;
+}
+
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>): ConstituenciesSearch =>
+    typeof search.election === "string" && search.election !== ""
+      ? { election: search.election as ElectionId }
+      : {},
   component: ConstituenciesPage,
 });
 
@@ -25,13 +36,21 @@ function reservationLabel(
 function ConstituenciesPage() {
   const { locale } = useLocale();
   const L = labels[locale];
-  const listAtom = useMemo(() => constituenciesAtom(), []);
+  const { election } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const listAtom = useMemo(() => constituenciesAtom(election), [election]);
   const result = useAtomValue(listAtom);
   const [filter, setFilter] = useState("");
+  const shown = AsyncResult.isSuccess(result) ? result.value.election.id : (election ?? null);
 
   return (
     <div>
       <h1 className="mb-1 text-2xl font-semibold text-neutral-900">{L.constituencies}</h1>
+      <YearPicker
+        selected={shown}
+        onSelect={(next) => void navigate({ search: { election: next } })}
+        locale={locale}
+      />
       <AsyncResultView
         result={result}
         locale={locale}
