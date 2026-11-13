@@ -1,8 +1,9 @@
 import { useAtomValue } from "@effect/atom-react";
 import { LegendList } from "@legendapp/list/react-native";
 import { constituenciesAtom, labels, localizedName, type Locale } from "@team-republic/client";
-import type { ConstituencySummary } from "@team-republic/contracts";
-import { Link } from "expo-router";
+import type { ConstituencySummary, ElectionId } from "@team-republic/contracts";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
+import { Link, router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -10,6 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AsyncResultView } from "../src/async-result";
 import { displayName, reservationLabel } from "../src/display-name";
 import { useLocale } from "../src/locale-context";
+import { YearPicker } from "../src/year-picker";
 
 const matchesQuery = (item: ConstituencySummary, query: string, locale: Locale): boolean => {
   const normalized = query.trim().toLowerCase();
@@ -32,12 +34,26 @@ const matchesQuery = (item: ConstituencySummary, query: string, locale: Locale):
 export default function ConstituenciesScreen() {
   const { locale } = useLocale();
   const insets = useSafeAreaInsets();
-  const listAtom = useMemo(() => constituenciesAtom(), []);
+  // `?election=<id>` picks a stored election; without it the screen shows the latest one.
+  const params = useLocalSearchParams<{ election?: string }>();
+  const election =
+    typeof params.election === "string" && params.election !== ""
+      ? (params.election as ElectionId)
+      : undefined;
+  const listAtom = useMemo(() => constituenciesAtom(election), [election]);
   const result = useAtomValue(listAtom);
   const [query, setQuery] = useState("");
+  const shown = AsyncResult.isSuccess(result) ? result.value.election.id : (election ?? null);
 
   return (
     <View className="flex-1 bg-white dark:bg-neutral-950">
+      <View className="px-4 pt-3">
+        <YearPicker
+          selected={shown}
+          onSelect={(next) => router.setParams({ election: next })}
+          locale={locale}
+        />
+      </View>
       <AsyncResultView locale={locale} result={result}>
         {(data) => {
           const filtered = data.constituencies.filter((item) => matchesQuery(item, query, locale));
