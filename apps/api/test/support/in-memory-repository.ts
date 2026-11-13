@@ -30,6 +30,23 @@ export const inMemoryRepository = (data: InMemoryData) =>
         Effect.sync(() => data.constituencies.filter((c) => c.electionId === electionId)),
       findConstituency: (id) =>
         Effect.sync(() => data.constituencies.find((c) => c.id === id) ?? null),
+      listElectionCandidacies: (electionId) =>
+        Effect.sync(() => data.candidacies.filter((c) => c.electionId === electionId)),
+      partySeatTotals: Effect.sync(() => {
+        const general = new Set(
+          data.elections.filter((e) => e.kind === "general").map((e) => e.id),
+        );
+        const totals = new Map<
+          string,
+          { party: NonNullable<CandidacyRow["party"]>; seats: number }
+        >();
+        for (const row of data.candidacies) {
+          if (!row.isWinner || row.party === null || !general.has(row.electionId)) continue;
+          const entry = totals.get(row.party.id) ?? { party: row.party, seats: 0 };
+          totals.set(row.party.id, { ...entry, seats: entry.seats + 1 });
+        }
+        return [...totals.values()];
+      }),
       listCandidacies: (constituencyId) =>
         Effect.sync(() => data.candidacies.filter((c) => c.constituencyId === constituencyId)),
       findCandidate: (id) =>

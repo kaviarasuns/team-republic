@@ -84,6 +84,14 @@ export class ElectionRepository extends Context.Service<
       electionId: string,
     ) => Effect.Effect<ReadonlyArray<ConstituencyRow>>;
     readonly findConstituency: (id: string) => Effect.Effect<ConstituencyRow | null>;
+    /** Result candidacies of every constituency in one election. */
+    readonly listElectionCandidacies: (
+      electionId: string,
+    ) => Effect.Effect<ReadonlyArray<CandidacyRow>>;
+    /** Seats won per party across all general elections; independents are left out. */
+    readonly partySeatTotals: Effect.Effect<
+      ReadonlyArray<{ readonly party: PartyRow; readonly seats: number }>
+    >;
     readonly listCandidacies: (
       constituencyId: string,
     ) => Effect.Effect<ReadonlyArray<CandidacyRow>>;
