@@ -11,7 +11,8 @@ export default defineConfig({
   server: {
     strictPort: true,
     proxy: {
-      "^/rpc$": apiTarget,
+      // Effect's RPC HTTP client posts to `${url}/`, so match the trailing slash too.
+      "^/rpc/?$": apiTarget,
       "^/api/": apiTarget,
       "^/health$": apiTarget,
     },
