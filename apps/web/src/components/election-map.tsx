@@ -205,5 +205,12 @@ export function ElectionMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, focusKey]);
 
-  return <div ref={container} role="region" aria-label={label} className="absolute inset-0" />;
+  // MapLibre's stylesheet sets `position: relative` on the element it draws
+  // into, which would cancel `absolute inset-0` and leave it 0px tall. The
+  // outer box does the positioning; the map element just fills it.
+  return (
+    <div className="absolute inset-0">
+      <div ref={container} role="region" aria-label={label} className="h-full w-full" />
+    </div>
+  );
 }

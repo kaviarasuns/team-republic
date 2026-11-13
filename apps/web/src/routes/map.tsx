@@ -393,6 +393,18 @@ function MarginLegend({ data, locale }: { data: ElectionMapData; locale: Locale 
   );
 }
 
+/**
+ * The margin as a share of the vote. A real margin that rounds to 0.00% (a
+ * 1-vote win) reads as "< 0.01%" so it never looks like a tie.
+ */
+function marginPercent(outcome: ConstituencyOutcome, locale: Locale): string {
+  const share = outcome.marginShare ?? 0;
+  if (share === 0 && outcome.margin !== null && outcome.margin > 0) {
+    return `< ${formatPercent(0.01, locale)}`;
+  }
+  return formatPercent(share, locale);
+}
+
 function partyLabel(outcome: ConstituencyOutcome, locale: Locale): string {
   const L = labels[locale];
   if (outcome.winner === null) return L.noResult;
@@ -441,8 +453,7 @@ function SeatCard({ outcome, locale }: { outcome: ConstituencyOutcome | null; lo
             <>
               <dt className="text-neutral-600">{L.margin}</dt>
               <dd className="tabular-nums text-neutral-900">
-                {formatNumber(outcome.margin, locale)} ({formatPercent(outcome.marginShare, locale)}
-                )
+                {formatNumber(outcome.margin, locale)} ({marginPercent(outcome, locale)})
               </dd>
             </>
           ) : null}
@@ -557,7 +568,7 @@ function SeatTooltip({
       <p className="text-neutral-700">{partyLabel(outcome, locale)}</p>
       {outcome.marginShare !== null ? (
         <p className="tabular-nums text-neutral-600">
-          {L.margin}: {formatPercent(outcome.marginShare, locale)}
+          {L.margin}: {marginPercent(outcome, locale)}
         </p>
       ) : null}
     </div>
