@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { assembleTn2021, type Tn2021Sources } from "../../src/ingest/assemble-tn2021.ts";
+import { assembleResults, type ResultSources } from "../../src/ingest/assemble.ts";
 import type {
   ParsedCandidate,
   ParsedConstituencyResult,
@@ -8,7 +8,7 @@ import type {
 import type { ParsedConstituencySummary } from "../../src/ingest/parse-constituency-summary.ts";
 import type { ParsedParty } from "../../src/ingest/parse-parties.ts";
 import type { ParsedWinner } from "../../src/ingest/parse-winners.ts";
-import { CONSTITUENCY_COUNT } from "../../src/ingest/tn2021-constants.ts";
+import { CONSTITUENCY_COUNT } from "../../src/ingest/elections.ts";
 
 // Synthetic fixture. These names and numbers are not election results.
 
@@ -48,6 +48,7 @@ const constituency = (
   return {
     number,
     name: `Test AC ${number}`,
+    reservationSuffix: null,
     electors: 1000 + number,
     nota: {
       generalVotes: 1,
@@ -67,7 +68,7 @@ const constituency = (
   };
 };
 
-const validSources = (): Tn2021Sources => {
+const validSources = (): ResultSources => {
   const constituencies = Array.from({ length: CONSTITUENCY_COUNT }, (_, index) =>
     constituency(index + 1),
   );
@@ -97,9 +98,13 @@ const validSources = (): Tn2021Sources => {
     { abbreviation: "NOTA", name: "None of the Above", sourceSheet: "Worksheet", sourceRow: 7 },
   ];
   const winners: ParsedWinner[] = constituencies.map((item) => ({
+    constituencyNumber: null,
     constituencyName: item.name,
     candidateName: "Candidate A",
     partyAbbreviation: "TPA",
+    totalVotes: null,
+    runnerUp: null,
+    margin: null,
     sourceSheet: "Worksheet",
     sourceRow: 100 + item.number,
   }));
@@ -119,10 +124,10 @@ const validSources = (): Tn2021Sources => {
 };
 
 const replaceConstituency = (
-  sources: Tn2021Sources,
+  sources: ResultSources,
   index: number,
   next: ParsedConstituencyResult,
-): Tn2021Sources => ({
+): ResultSources => ({
   ...sources,
   detailed: {
     ...sources.detailed,
@@ -132,7 +137,28 @@ const replaceConstituency = (
   },
 });
 
-const withGrandTotal = (sources: Tn2021Sources): Tn2021Sources => {
+/** The 2026 successful-candidates layout: AC number, winner votes, runner-up and margin. */
+const withListedFigures = (sources: ResultSources): ResultSources => ({
+  ...sources,
+  winners: sources.winners.map((winner, index) => ({
+    ...winner,
+    constituencyNumber: index + 1,
+    totalVotes: 10,
+    runnerUp: { partyAbbreviation: "IND", totalVotes: 4 },
+    margin: 6,
+  })),
+});
+
+const replaceWinner = (
+  sources: ResultSources,
+  index: number,
+  change: (winner: ParsedWinner) => ParsedWinner,
+): ResultSources => ({
+  ...sources,
+  winners: sources.winners.map((item, itemIndex) => (itemIndex === index ? change(item) : item)),
+});
+
+const withGrandTotal = (sources: ResultSources): ResultSources => {
   const grand = sources.detailed.constituencies.reduce(
     (sum, item) => ({
       general: sum.general + (item.printedTotal.generalVotes ?? 0),
@@ -155,9 +181,9 @@ const withGrandTotal = (sources: Tn2021Sources): Tn2021Sources => {
   };
 };
 
-describe("assembleTn2021", () => {
+describe("assembleResults", () => {
   it("keeps file ranks, leaves IND and NOTA out of the party table, and checks the winner set", () => {
-    const assembled = assembleTn2021(validSources());
+    const assembled = assembleResults(validSources());
     expect(assembled.constituencies).toHaveLength(CONSTITUENCY_COUNT);
     expect(assembled.parties.map((party) => party.abbreviation)).toEqual(["TPA", "TPB"]);
     const second = assembled.constituencies[1];
@@ -190,7 +216,7 @@ describe("assembleTn2021", () => {
       ],
     );
     const sources = withGrandTotal(replaceConstituency(validSources(), 0, tied));
-    const assembled = assembleTn2021(sources);
+    const assembled = assembleResults(sources);
     expect(
       assembled.constituencies[0]?.candidates.map((candidate) => [
         candidate.nameEn,
@@ -213,12 +239,12 @@ describe("assembleTn2021", () => {
       ],
     );
     const sources = replaceConstituency(validSources(), 0, tied);
-    expect(() => assembleTn2021(sources)).toThrow(/tie on 5 votes/);
+    expect(() => assembleResults(sources)).toThrow(/tie on 5 votes/);
   });
 
   it("aborts when a constituency is missing", () => {
     const sources = validSources();
-    const shortened: Tn2021Sources = {
+    const shortened: ResultSources = {
       ...sources,
       detailed: {
         ...sources.detailed,
@@ -227,7 +253,7 @@ describe("assembleTn2021", () => {
       summaries: sources.summaries.slice(0, -1),
       winners: sources.winners.slice(0, -1),
     };
-    expect(() => assembleTn2021(shortened)).toThrow(/expected 234 constituencies, found 233/);
+    expect(() => assembleResults(shortened)).toThrow(/expected 234 constituencies, found 233/);
   });
 
   it("aborts when candidate votes plus NOTA do not match the printed total", () => {
@@ -244,7 +270,7 @@ describe("assembleTn2021", () => {
         totalVotes: general + postal,
       },
     });
-    expect(() => assembleTn2021(broken)).toThrow(/general votes/);
+    expect(() => assembleResults(broken)).toThrow(/general votes/);
   });
 
   it("aborts when general plus postal does not equal total", () => {
@@ -258,19 +284,19 @@ describe("assembleTn2021", () => {
         first.candidates[1]!,
       ],
     });
-    expect(() => assembleTn2021(broken)).toThrow(/does not equal total/);
+    expect(() => assembleResults(broken)).toThrow(/does not equal total/);
   });
 
   it("aborts when the successful-candidates file names a different winner", () => {
     const sources = validSources();
     const winner = sources.winners[4]!;
-    const broken: Tn2021Sources = {
+    const broken: ResultSources = {
       ...sources,
       winners: sources.winners.map((item, index) =>
         index === 4 ? { ...winner, candidateName: "Someone Else" } : item,
       ),
     };
-    expect(() => assembleTn2021(broken)).toThrow(/successful-candidates row/);
+    expect(() => assembleResults(broken)).toThrow(/successful-candidates row/);
   });
 
   it("aborts when a constituency has fewer than two candidates", () => {
@@ -289,19 +315,19 @@ describe("assembleTn2021", () => {
         totalVotes: general + postal,
       },
     });
-    expect(() => assembleTn2021(broken)).toThrow(/expected at least 2/);
+    expect(() => assembleResults(broken)).toThrow(/expected at least 2/);
   });
 
   it("aborts when the summary sheet disagrees on electors", () => {
     const sources = validSources();
     const summary = sources.summaries[0]!;
-    const broken: Tn2021Sources = {
+    const broken: ResultSources = {
       ...sources,
       summaries: sources.summaries.map((item, index) =>
         index === 0 ? { ...summary, electors: 1 } : item,
       ),
     };
-    expect(() => assembleTn2021(broken)).toThrow(/electors are/);
+    expect(() => assembleResults(broken)).toThrow(/electors are/);
   });
 
   it("aborts when a candidate party is not in the parties list", () => {
@@ -312,6 +338,61 @@ describe("assembleTn2021", () => {
       ...first,
       candidates: [first.candidates[0]!, { ...candidateB, partyAbbreviation: "ZZZ" }],
     });
-    expect(() => assembleTn2021(broken)).toThrow(/not in the parties list/);
+    expect(() => assembleResults(broken)).toThrow(/not in the parties list/);
+  });
+
+  it("accepts a successful-candidates file that prints AC numbers, votes, runner-up and margin", () => {
+    const assembled = assembleResults(withListedFigures(validSources()));
+    expect(assembled.constituencies).toHaveLength(CONSTITUENCY_COUNT);
+  });
+
+  it("aborts when a listed AC number points at a different constituency", () => {
+    const sources = replaceWinner(withListedFigures(validSources()), 4, (winner) => ({
+      ...winner,
+      constituencyNumber: 6,
+    }));
+    expect(() => assembleResults(sources)).toThrow(
+      /AC 6 is named "Test AC 5", Detailed Results names it "Test AC 6"/,
+    );
+  });
+
+  it("aborts when the listed winner votes differ from Detailed Results", () => {
+    const sources = replaceWinner(withListedFigures(validSources()), 4, (winner) => ({
+      ...winner,
+      totalVotes: 11,
+    }));
+    expect(() => assembleResults(sources)).toThrow(
+      /winner has 10 votes in Detailed Results and 11/,
+    );
+  });
+
+  it("aborts when the listed runner-up differs from rank 2", () => {
+    const sources = replaceWinner(withListedFigures(validSources()), 4, (winner) => ({
+      ...winner,
+      runnerUp: { partyAbbreviation: "TPB", totalVotes: 4 },
+    }));
+    expect(() => assembleResults(sources)).toThrow(/rank 2 is IND with 4 votes/);
+  });
+
+  it("aborts when the listed margin differs from the vote gap", () => {
+    const sources = replaceWinner(withListedFigures(validSources()), 4, (winner) => ({
+      ...winner,
+      margin: 7,
+    }));
+    expect(() => assembleResults(sources)).toThrow(/margin of 7, Detailed Results gives 6/);
+  });
+
+  it("aborts when a printed (SC) suffix disagrees with the summary reservation", () => {
+    const sources = validSources();
+    const first = sources.detailed.constituencies[0]!;
+    const broken = replaceConstituency(sources, 0, { ...first, reservationSuffix: "SC" });
+    expect(() => assembleResults(broken)).toThrow(/prints \(SC\), the summary sheet .* says GEN/);
+  });
+
+  it("accepts a printed suffix that matches the summary reservation", () => {
+    const sources = validSources();
+    const second = sources.detailed.constituencies[1]!;
+    const matched = replaceConstituency(sources, 1, { ...second, reservationSuffix: "SC" });
+    expect(assembleResults(matched).constituencies[1]?.reservation).toBe("SC");
   });
 });
