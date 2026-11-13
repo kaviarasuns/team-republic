@@ -29,7 +29,7 @@ pnpm install
 cp .env.example .env
 docker compose up -d --wait     # Postgres 18 + SeaweedFS (S3-compatible)
 pnpm db:migrate                 # apply drizzle migrations
-pnpm db:seed                    # load TN Assembly 2021 from ECI (downloads are cached in .cache/)
+pnpm db:seed                    # load TN Assembly 2021 and 2026 from ECI (downloads are cached in .cache/)
 ```
 
 Every day:

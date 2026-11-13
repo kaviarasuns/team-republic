@@ -7,14 +7,22 @@ import type {
 import type { ParsedConstituencySummary, Reservation } from "./parse-constituency-summary.ts";
 import type { ParsedParty } from "./parse-parties.ts";
 import type { ParsedWinner } from "./parse-winners.ts";
-import { CONSTITUENCY_COUNT } from "./tn2021-constants.ts";
+import { CONSTITUENCY_COUNT } from "./elections.ts";
 
 /**
  * Joins the four workbooks and checks them before anything is written.
  *
- * The successful-candidates file has no AC number. The number used in the
- * comparison is the Detailed Results number of the constituency whose name
- * matches exactly. A name that does not match is an error, not a fuzzy match.
+ * The 2021 successful-candidates file has no AC number. The number used in
+ * the comparison is the Detailed Results number of the constituency whose
+ * name matches exactly. A name that does not match is an error, not a fuzzy
+ * match, and a name printed for two ACs is an error. When the file prints the
+ * AC number (2026), the row is joined on the number and the name must still
+ * match; two ACs may then share a name (2026 prints AC 50 and AC 185 both as
+ * "TIRUPPATTUR"). Its winner votes, runner-up party and
+ * votes, and margin must then equal the Detailed Results figures.
+ *
+ * A "(SC)" or "(ST)" suffix on the Detailed Results name must equal the
+ * summary sheet reservation.
  *
  * Reservation is read from the constituency-summary sheet. Electors and NOTA
  * in that sheet must equal the Detailed Results figures. The stored
@@ -59,12 +67,12 @@ export interface AssembledParty {
   readonly sourceRow: number;
 }
 
-export interface AssembledTn2021 {
+export interface AssembledElection {
   readonly constituencies: readonly AssembledConstituency[];
   readonly parties: readonly AssembledParty[];
 }
 
-export interface Tn2021Sources {
+export interface ResultSources {
   readonly detailed: ParsedDetailedResults;
   readonly parties: readonly ParsedParty[];
   readonly winners: readonly ParsedWinner[];
@@ -131,7 +139,46 @@ const ranksFor = (candidates: readonly ParsedCandidate[], where: string): number
   return ranks;
 };
 
-export const assembleTn2021 = (sources: Tn2021Sources): AssembledTn2021 => {
+/** Compares the votes, runner-up and margin the successful-candidates file prints, when it prints them. */
+const checkListedFigures = (
+  listed: ParsedWinner,
+  winner: ParsedCandidate,
+  ranks: readonly number[],
+  candidates: readonly ParsedCandidate[],
+  where: string,
+) => {
+  const row = `successful-candidates row ${listed.sourceRow}`;
+  if (listed.totalVotes !== null && listed.totalVotes !== winner.votes.totalVotes) {
+    ingestFail(
+      `${where}: winner has ${winner.votes.totalVotes} votes in Detailed Results and ${listed.totalVotes} on ${row}`,
+    );
+  }
+  if (listed.runnerUp === null && listed.margin === null) return;
+  const runnerUpIndexes = ranks.flatMap((rank, index) => (rank === 2 ? [index] : []));
+  const runnerUp = runnerUpIndexes.length === 1 ? candidates[runnerUpIndexes[0] ?? -1] : undefined;
+  if (runnerUp === undefined) {
+    ingestFail(
+      `${where}: ${row} prints a runner-up, Detailed Results has ${runnerUpIndexes.length} rank-2 candidates`,
+    );
+  }
+  if (
+    listed.runnerUp !== null &&
+    (listed.runnerUp.partyAbbreviation !== runnerUp.partyAbbreviation ||
+      listed.runnerUp.totalVotes !== runnerUp.votes.totalVotes)
+  ) {
+    ingestFail(
+      `${where}: Detailed Results rank 2 is ${runnerUp.partyAbbreviation} with ${runnerUp.votes.totalVotes} votes, ${row} prints ${listed.runnerUp.partyAbbreviation} with ${listed.runnerUp.totalVotes}`,
+    );
+  }
+  const margin = winner.votes.totalVotes - runnerUp.votes.totalVotes;
+  if (listed.margin !== null && listed.margin !== margin) {
+    ingestFail(
+      `${where}: ${row} prints a margin of ${listed.margin}, Detailed Results gives ${margin}`,
+    );
+  }
+};
+
+export const assembleResults = (sources: ResultSources): AssembledElection => {
   const { constituencies } = sources.detailed;
   if (constituencies.length !== CONSTITUENCY_COUNT) {
     ingestFail(`expected ${CONSTITUENCY_COUNT} constituencies, found ${constituencies.length}`);
@@ -167,19 +214,40 @@ export const assembleTn2021 = (sources: Tn2021Sources): AssembledTn2021 => {
     );
   }
 
+  const nameByNumber = new Map<number, string>();
   const numberByName = new Map<string, number>();
+  const repeatedNames = new Set<string>();
   for (const constituency of constituencies) {
-    if (numberByName.has(constituency.name))
-      ingestFail(`duplicate constituency name ${JSON.stringify(constituency.name)}`);
+    nameByNumber.set(constituency.number, constituency.name);
+    if (numberByName.has(constituency.name)) repeatedNames.add(constituency.name);
     numberByName.set(constituency.name, constituency.number);
   }
   const winnerByNumber = new Map<number, ParsedWinner>();
   for (const winner of sources.winners) {
-    const number = numberByName.get(winner.constituencyName);
-    if (number === undefined) {
-      ingestFail(
-        `successful-candidates row ${winner.sourceRow}: constituency ${JSON.stringify(winner.constituencyName)} does not match a Detailed Results name`,
-      );
+    const row = `successful-candidates row ${winner.sourceRow}`;
+    let number: number;
+    if (winner.constituencyNumber !== null) {
+      number = winner.constituencyNumber;
+      const name = nameByNumber.get(number);
+      if (name === undefined) ingestFail(`${row}: AC ${number} is not in Detailed Results`);
+      if (name !== winner.constituencyName) {
+        ingestFail(
+          `${row}: AC ${number} is named ${JSON.stringify(winner.constituencyName)}, Detailed Results names it ${JSON.stringify(name)}`,
+        );
+      }
+    } else {
+      if (repeatedNames.has(winner.constituencyName)) {
+        ingestFail(
+          `${row}: constituency ${JSON.stringify(winner.constituencyName)} names more than one AC and the file prints no AC number`,
+        );
+      }
+      const found = numberByName.get(winner.constituencyName);
+      if (found === undefined) {
+        ingestFail(
+          `${row}: constituency ${JSON.stringify(winner.constituencyName)} does not match a Detailed Results name`,
+        );
+      }
+      number = found;
     }
     if (winnerByNumber.has(number))
       ingestFail(`AC ${number} has two rows in the successful-candidates file`);
@@ -197,6 +265,14 @@ export const assembleTn2021 = (sources: Tn2021Sources): AssembledTn2021 => {
     if (summary.name !== constituency.name) {
       ingestFail(
         `${where}: name ${JSON.stringify(constituency.name)} in Detailed Results, ${JSON.stringify(summary.name)} in the summary sheet ${summary.sourceSheet}`,
+      );
+    }
+    if (
+      constituency.reservationSuffix !== null &&
+      constituency.reservationSuffix !== summary.reservation
+    ) {
+      ingestFail(
+        `${where}: Detailed Results prints (${constituency.reservationSuffix}), the summary sheet ${summary.sourceSheet} says ${summary.reservation}`,
       );
     }
     if (summary.electors !== constituency.electors) {
@@ -287,6 +363,7 @@ export const assembleTn2021 = (sources: Tn2021Sources): AssembledTn2021 => {
         `${where}: Detailed Results rank 1 is ${JSON.stringify(winner.name)} (${winner.partyAbbreviation}), successful-candidates row ${listed.sourceRow} is ${JSON.stringify(listed.candidateName)} (${listed.partyAbbreviation})`,
       );
     }
+    checkListedFigures(listed, winner, ranks, constituency.candidates, where);
 
     const candidates: AssembledCandidate[] = constituency.candidates.map((candidate, index) => {
       const rank = ranks[index];
