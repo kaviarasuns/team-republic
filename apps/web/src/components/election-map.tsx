@@ -6,7 +6,9 @@ import {
   type MapLayerMouseEvent,
   type MapMouseEvent,
   NavigationControl,
+  setWorkerUrl,
 } from "maplibre-gl";
+import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import { useEffect, useRef, useState } from "react";
 import {
   type Bounds,
@@ -15,6 +17,12 @@ import {
   TAMIL_NADU_BOUNDS,
 } from "../lib/boundaries.ts";
 import { HIGHLIGHT_COLOR, NO_RESULT_COLOR, SURFACE_COLOR } from "../lib/map-colors.ts";
+
+// MapLibre looks for its worker next to its own module file. Vite moves that
+// module (dev pre-bundling, production chunks), so the worker 404s and no map
+// draws. Hand MapLibre the worker's real URL instead; the worker file is
+// self-contained, so serving it as a plain asset is enough.
+setWorkerUrl(workerUrl);
 
 const SOURCE = "seats";
 const FILL_LAYER = "seat-fill";
